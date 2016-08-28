@@ -112,9 +112,11 @@ def action_on(name, time):
     print('Start working on ' + green(name) + '.')
 
 
-def action_fin(time, back_from_interrupt=True):
+def action_fin(time, back_from_interrupt=True, force=False):
     ensure_working()
-    ensure_noted()
+
+    if force == False:
+        ensure_noted()
 
     data = store.load()
 
@@ -296,7 +298,8 @@ def ensure_noted():
     current = data['work'][-1]
 
     if 'notes' not in current:
-        print("Before you can exit, please note this session.", file=sys.stderr)
+        print("Before you can exit, please note this session using `ti n Example note`", file=sys.stderr)
+        print("To force finish without adding a note use `ti ff`")
         raise SystemExit(1)
 
 def to_datetime(timestr):
@@ -403,6 +406,10 @@ def parse_args(argv=sys.argv):
     elif head in ['f', 'fin']:
         fn = action_fin
         args = {'time': to_datetime(' '.join(tail))}
+
+    elif head in ['ff', 'forcefin']:
+        fn = action_fin
+        args = {'time': to_datetime(' '.join(tail)), 'force': True}
 
     elif head in ['s', 'status']:
         fn = action_status
