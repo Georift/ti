@@ -114,6 +114,7 @@ def action_on(name, time):
 
 def action_fin(time, back_from_interrupt=True):
     ensure_working()
+    ensure_noted()
 
     data = store.load()
 
@@ -287,6 +288,16 @@ def ensure_working():
     print('See `ti -h` to know how to start working.', file=sys.stderr)
     raise SystemExit(1)
 
+def ensure_noted():
+    if not is_working():
+        raise SystemExit(1)
+
+    data = store.load()
+    current = data['work'][-1]
+
+    if 'notes' not in current:
+        print("Before you can exit, please note this session.", file=sys.stderr)
+        raise SystemExit(1)
 
 def to_datetime(timestr):
     return parse_engtime(timestr).isoformat() + 'Z'
