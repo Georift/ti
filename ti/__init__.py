@@ -35,6 +35,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import pprint
 from datetime import datetime, timedelta
 from collections import defaultdict
 from os import path
@@ -202,12 +203,22 @@ def action_status():
     print('You have been working on {0} for {1}.'.format(
         green(current['name']), diff))
 
+def filter_work_for_today(work):
+    today = datetime.combine(datetime.utcnow().date(), datetime.min.time())
+
+    for item in work:
+        if parse_isotime(item['start']) > today: yield item
 
 def action_log(period):
     data = store.load()
-    work = data['work'] + data['interrupt_stack']
+    unfiltered_work = data['work'] + data['interrupt_stack']
     log = defaultdict(lambda: {'delta': timedelta()})
     current = None
+
+    if period == None:
+        work = filter_work_for_today(unfiltered_work)
+    else:
+        work = unfiltered_work
 
     for item in work:
         start_time = parse_isotime(item['start'])
