@@ -64,6 +64,37 @@ class JsonStore(object):
         with open(self.filename, 'w') as f:
             json.dump(data, f, separators=(',', ': '), indent=2)
 
+    def output_csv(self, data, output):
+        pprint.pprint(data['work'])
+
+        print("task,start,end,notes")
+        seq = ['name', 'start', 'end', 'notes']
+
+        for unit in data['work']:
+            
+            row = []
+            # pick out the information into the form we want
+            for item in seq:
+                value = unit.get(item, "")
+
+                if item is "notes":
+                    value = '::'.join(value)
+
+                #print(item, ":", value)
+                row.append(value)
+            
+            start = parse_isotime(row[1])
+            end = parse_isotime(row[2])
+
+            pprint.pprint(start)
+            pprint.pprint(end)
+
+            print((end - start).seconds / 3600)
+            
+            print()
+
+            # join the values into on csv entry
+            #print(','.join(row))
 
 def red(str):
     if use_color:
@@ -154,6 +185,9 @@ def action_interrupt(name, time):
     action_on('interrupt: ' + green(name), time)
     print('You are now %d deep in interrupts.' % len(interrupt_stack))
 
+def export_data():
+    data = store.load()
+    store.output_csv(data, "filename")
 
 def action_note(content):
     ensure_working()
@@ -384,8 +418,6 @@ def helpful_exit(msg=__doc__):
 def parse_args(argv=sys.argv):
     global use_color
 
-    argv = [arg.decode('utf-8') for arg in argv]
-
     if '--no-color' in argv:
         use_color = False
         argv.remove('--no-color')
@@ -453,6 +485,10 @@ def parse_args(argv=sys.argv):
             'name': tail[0],
             'time': to_datetime(' '.join(tail[1:])),
         }
+
+    elif head in ['export']:
+        fn = export_data
+        args = {}
 
     else:
         helpful_exit("I don't understand '" + head + "'")
