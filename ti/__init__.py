@@ -12,6 +12,7 @@ Usage:
   ti (n|note) <note-text>...
   ti (l|log) [today]
   ti (e|edit)
+  ti (export)
   ti (i|interrupt)
   ti --no-color
   ti -h | --help
@@ -64,11 +65,10 @@ class JsonStore(object):
         with open(self.filename, 'w') as f:
             json.dump(data, f, separators=(',', ': '), indent=2)
 
-    def output_csv(self, data, output):
-        pprint.pprint(data['work'])
-
-        print("task,start,end,notes")
+    def output_csv(self, data, filename):
         seq = ['name', 'start', 'end', 'notes']
+
+        outStr = ""
 
         for unit in data['work']:
             
@@ -86,15 +86,15 @@ class JsonStore(object):
             start = parse_isotime(row[1])
             end = parse_isotime(row[2])
 
-            pprint.pprint(start)
-            pprint.pprint(end)
+            diff = (end - start).seconds / 3600
+            row.append(diff)
 
-            print((end - start).seconds / 3600)
-            
-            print()
+            outStr += ','.join(str(item) for item in row) + '\n'
 
-            # join the values into on csv entry
-            #print(','.join(row))
+        f = open(filename, "w+")
+        f.write('name,start,end,notes,time\n')
+        f.write(outStr)
+        f.close()
 
 def red(str):
     if use_color:
@@ -187,7 +187,11 @@ def action_interrupt(name, time):
 
 def export_data():
     data = store.load()
-    store.output_csv(data, "filename")
+    store.output_csv(data, "output.csv")
+
+def status_bar():
+    data = store.load()
+    print('$100.00')
 
 def action_note(content):
     ensure_working()
@@ -243,6 +247,17 @@ def filter_work_for_today(work):
     for item in work:
         if parse_isotime(item['start']) > today: yield item
 
+# The start of the work week is Monday.
+def filter_work_for_this_week(work):
+    today = datetime.combine(datetime.utcnow().date(), datetime.min.time())
+
+    # Get the date of the last monday.
+    idx = (today.weekday() + 1) % 7
+    monday = today - timedelta(7 + idx - 1)
+
+    for item in work:
+        if parse_isotime(item['start']) > monday: yield item
+
 def action_log(period):
     data = store.load()
     unfiltered_work = data['work'] + data['interrupt_stack']
@@ -250,8 +265,13 @@ def action_log(period):
     current = None
 
     if period == None:
+        print("Showing log for " + Fore.GREEN + "today" + Fore.RESET + ".")
         work = filter_work_for_today(unfiltered_work)
+    elif period == "week":
+        print("Showing log for " + Fore.GREEN + "this week" + Fore.RESET + ".")
+        work = filter_work_for_this_week(unfiltered_work)
     else:
+        print("Showing log for " + Fore.GREEN + "all time" + Fore.RESET + ".")
         work = unfiltered_work
 
     for item in work:
@@ -488,6 +508,10 @@ def parse_args(argv=sys.argv):
 
     elif head in ['export']:
         fn = export_data
+        args = {}
+
+    elif head in ['status_bar']:
+        fn = status_bar
         args = {}
 
     else:
