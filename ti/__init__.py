@@ -267,12 +267,9 @@ def action_log(period):
     if period == None:
         print("Showing log for " + Fore.GREEN + "today" + Fore.RESET + ".")
         work = filter_work_for_today(unfiltered_work)
-    elif period == "week":
+    else:
         print("Showing log for " + Fore.GREEN + "this week" + Fore.RESET + ".")
         work = filter_work_for_this_week(unfiltered_work)
-    else:
-        print("Showing log for " + Fore.GREEN + "all time" + Fore.RESET + ".")
-        work = unfiltered_work
 
     for item in work:
         start_time = parse_isotime(item['start'])
