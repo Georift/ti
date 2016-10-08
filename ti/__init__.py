@@ -253,7 +253,7 @@ def filter_work_for_this_week(work):
 
     # Get the date of the last monday.
     idx = (today.weekday() + 1) % 7
-    monday = today - timedelta(7 + idx - 1)
+    monday = today - timedelta(idx)
 
     for item in work:
         if parse_isotime(item['start']) > monday: yield item
